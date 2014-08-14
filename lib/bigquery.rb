@@ -33,6 +33,8 @@ class BigQuery
   # * allowLargeResults (default: false)
   # * destinationTable
   # * maxResults
+  # and more...
+  # For more info see: https://developers.google.com/bigquery/docs/reference/v2/jobs
   def query(body, faraday_options={})
     if body.is_a?(String)
       body = { "query" => body, 'timeoutMs' => 90 * 1000 }
