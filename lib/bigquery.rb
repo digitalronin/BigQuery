@@ -40,6 +40,10 @@ class BigQuery
       body = { "query" => body, 'timeoutMs' => 90 * 1000 }
     end
 
+    if body.has_key?('timeoutMs')
+      faraday_options[:timeout] = body['timeoutMs'] / 1000
+    end
+
     res = api({
       :api_method      => @bq.jobs.query,
       :body_object     => body,
