@@ -14,7 +14,7 @@ class BigQuery
     )
 
     @asserter = Google::APIClient::JWTAsserter.new(
-      opts['service_email'], 
+      opts['service_email'],
       "https://www.googleapis.com/auth/bigquery",
       key
     )
@@ -35,23 +35,23 @@ class BigQuery
   # * maxResults
   # and more...
   # For more info see: https://developers.google.com/bigquery/docs/reference/v2/jobs
-  def query(body, faraday_options={})
+  def query(body, faraday_option={})
     if body.is_a?(String)
       body = { "query" => body, 'timeoutMs' => 90 * 1000 }
     end
 
     if body.has_key?('timeoutMs')
-      faraday_options[:timeout] = body['timeoutMs'] / 1000
+      faraday_option[:timeout] = body['timeoutMs'] / 1000
     end
 
     res = api({
       :api_method      => @bq.jobs.query,
       :body_object     => body,
-      :faraday_options => faraday_options
+      :faraday_option => faraday_option
     })
 
     if res.has_key? "errors"
-      raise BigQueryError, "BigQuery has returned an error :: #{res['errors'].inspect}" 
+      raise BigQueryError, "BigQuery has returned an error :: #{res['errors'].inspect}"
     else
       res
     end
@@ -71,14 +71,14 @@ class BigQuery
   def job(id, opts = {})
     opts['jobId'] = id
 
-    api({ 
+    api({
       :api_method => @bq.jobs.get,
       :parameters => opts
     })
   end
 
   def jobs(opts = {})
-    api({ 
+    api({
       :api_method => @bq.jobs.list,
       :parameters => opts
     })
@@ -86,7 +86,7 @@ class BigQuery
 
   def get_query_results(jobId, opts = {})
     opts['jobId'] = jobId
-    api({ 
+    api({
       :api_method => @bq.jobs.get_query_results,
       :parameters => opts
     })
@@ -95,13 +95,13 @@ class BigQuery
   # perform a query synchronously
   # fetch all result rows, even when that takes >1 query
   # invoke /block/ once for each row, passing the row
-  def each_row(q, faraday_options = {}, &block)
+  def each_row(q, faraday_option = {}, &block)
     current_row = 0
     # repeatedly fetch results, starting from current_row
     # invoke the block on each one, then grab next page if there is one
     # it'll terminate when res has no 'rows' key or when we've done enough rows
     # perform query...
-    res = query(q, faraday_options)
+    res = query(q, faraday_option)
     job_id = res['jobReference']['jobId']
     # call the block on the first page of results
     if( res && res['rows'] )
@@ -152,5 +152,5 @@ class BigQuery
   end
 end
 
-class BigQueryError < StandardError  
-end  
+class BigQueryError < StandardError
+end
