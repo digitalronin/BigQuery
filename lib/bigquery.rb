@@ -27,11 +27,20 @@ class BigQuery
     @dataset = opts['dataset']
   end
 
-  def query(q, options = {})
-    timeout = options.fetch(:timeout, 90 * 1000)
+  # Either pass a query String or a Hash of options including:
+  # * query             (required)
+  # * timeoutMs         (default: 10_000)
+  # * allowLargeResults (default: false)
+  # * destinationTable
+  # * maxResults
+  def query(body)
+    if body.is_a?(String)
+      body = { "query" => body, 'timeoutMs' => 90 * 1000 }
+    end
+
     res = api({
       :api_method => @bq.jobs.query,
-      :body_object => { "query" => q, 'timeoutMs' => timeout}
+      :body_object => body
     })
 
     if res.has_key? "errors"
@@ -79,13 +88,13 @@ class BigQuery
   # perform a query synchronously
   # fetch all result rows, even when that takes >1 query
   # invoke /block/ once for each row, passing the row
-  def each_row(q, options = {}, &block)
+  def each_row(q, &block)
     current_row = 0
     # repeatedly fetch results, starting from current_row
     # invoke the block on each one, then grab next page if there is one
     # it'll terminate when res has no 'rows' key or when we've done enough rows
     # perform query...
-    res = query(q, options)
+    res = query(q)
     job_id = res['jobReference']['jobId']
     # call the block on the first page of results
     if( res && res['rows'] )
