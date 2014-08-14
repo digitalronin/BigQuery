@@ -6,7 +6,7 @@ class BigQuery
   attr_accessor :dataset, :project_id
 
   def initialize(opts = {})
-    @client = Google::APIClient.new
+    @client = Google::APIClient.new(opts.fetch(:google_api_client, {}))
 
     key = Google::APIClient::PKCS12.load_key(File.open(
       opts['key'], mode: 'rb'),
@@ -35,19 +35,14 @@ class BigQuery
   # * maxResults
   # and more...
   # For more info see: https://developers.google.com/bigquery/docs/reference/v2/jobs
-  def query(body, faraday_option={})
+  def query(body)
     if body.is_a?(String)
       body = { "query" => body, 'timeoutMs' => 90 * 1000 }
     end
 
-    if body.has_key?('timeoutMs')
-      faraday_option[:timeout] = body['timeoutMs'] / 1000
-    end
-
     res = api({
-      :api_method      => @bq.jobs.query,
-      :body_object     => body,
-      :faraday_option => faraday_option
+      :api_method  => @bq.jobs.query,
+      :body_object => body
     })
 
     if res.has_key? "errors"
@@ -95,13 +90,13 @@ class BigQuery
   # perform a query synchronously
   # fetch all result rows, even when that takes >1 query
   # invoke /block/ once for each row, passing the row
-  def each_row(q, faraday_option = {}, &block)
+  def each_row(q, &block)
     current_row = 0
     # repeatedly fetch results, starting from current_row
     # invoke the block on each one, then grab next page if there is one
     # it'll terminate when res has no 'rows' key or when we've done enough rows
     # perform query...
-    res = query(q, faraday_option)
+    res = query(q)
     job_id = res['jobReference']['jobId']
     # call the block on the first page of results
     if( res && res['rows'] )
